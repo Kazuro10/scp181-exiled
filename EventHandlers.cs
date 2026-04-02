@@ -1,8 +1,6 @@
 using System.Linq;
-using MEC;
 using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
-using Exiled.Events.EventArgs.Server;
 using PlayerRoles;
 
 namespace SCP181.Exiled;
@@ -10,6 +8,7 @@ namespace SCP181.Exiled;
 public sealed class EventHandlers
 {
     private readonly Plugin plugin;
+    private bool pendingAssignment;
 
     public EventHandlers(Plugin plugin)
     {
@@ -21,15 +20,16 @@ public sealed class EventHandlers
         if (Player.List.Count() < plugin.Config.MinimumPlayers)
             return;
 
-        Timing.CallDelayed(3f, () =>
-        {
-            var candidates = Player.List.Where(p => p.IsAlive && p.Role.Type == RoleTypeId.ClassD).ToList();
-            if (candidates.Count == 0)
-                return;
+        pendingAssignment = true;
+        TryAssignScp181();
+    }
 
-            var player = candidates[Plugin.Random.Next(candidates.Count)];
-            MakeScp181(player);
-        });
+    public void OnChangingRole(ChangingRoleEventArgs ev)
+    {
+        if (!pendingAssignment || ev.Player == null)
+            return;
+
+        TryAssignScp181();
     }
 
     public void OnInteractingDoor(InteractingDoorEventArgs ev)
@@ -37,11 +37,14 @@ public sealed class EventHandlers
         if (ev.Player == null || ev.Player.Id != Plugin.SCP181Id)
             return;
 
-        if (ev.CanOpen || ev.Door.IsLocked)
+        if (ev.Door == null || ev.Door.IsLocked)
+            return;
+
+        if (ev.IsAllowed)
             return;
 
         if (Roll(plugin.Config.DoorLuck))
-            ev.CanOpen = true;
+            ev.IsAllowed = true;
     }
 
     public void OnHurting(HurtingEventArgs ev)
@@ -63,12 +66,42 @@ public sealed class EventHandlers
 
         ClearScp181Visuals(ev.Player);
         Plugin.SCP181Id = 0;
+        pendingAssignment = false;
     }
 
-    public void OnRoundRestarting()
+    public void OnRestartingRound()
     {
         Plugin.SCP181Id = 0;
-        Log.Debug("SCP181 state has been reset.", plugin.Config.Debug);
+        pendingAssignment = false;
+
+        if (plugin.Config.Debug)
+            Log.Debug("SCP181 state has been reset.");
+    }
+
+    private void TryAssignScp181()
+    {
+        if (!pendingAssignment)
+            return;
+
+        if (Plugin.SCP181Id != 0)
+        {
+            pendingAssignment = false;
+            return;
+        }
+
+        if (Player.List.Count() < plugin.Config.MinimumPlayers)
+            return;
+
+        var candidates = Player.List
+            .Where(p => p.IsAlive && p.Role.Type == RoleTypeId.ClassD)
+            .ToList();
+
+        if (candidates.Count == 0)
+            return;
+
+        var player = candidates[Plugin.Random.Next(candidates.Count)];
+        MakeScp181(player);
+        pendingAssignment = false;
     }
 
     private void MakeScp181(Player player)
