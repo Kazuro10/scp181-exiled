@@ -12,6 +12,8 @@ debug: false
 
 # Percent chance for SCP-181 to open a denied but unlocked door.
 door_luck: 10
+# Cooldown in seconds before SCP-181 can roll luck again on the same door.
+door_luck_per_door_cooldown: 5
 # Percent chance for SCP-181 to negate incoming damage.
 damage_avoid_luck: 10
 # Maximum health assigned to SCP-181.
