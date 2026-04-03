@@ -7,7 +7,7 @@ A repaired and rewritten version of the original [SCP181 plugin](https://github.
 
 # SCP181
 
-Adds an SCP-181 role to the game.
+SCP-181 aka "Lucky Man" is a neutral D-Class SCP with luck-based abilities, allowing him to occasionally open doors without keycards, avoid damage.
 
 ## Configuration
 
