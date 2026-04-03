@@ -1,3 +1,5 @@
+**This plugin was made with the use of AI.**
+
 # SCP181
 
 Adds an SCP-181 role to the game.
