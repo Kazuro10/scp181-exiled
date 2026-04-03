@@ -2,7 +2,7 @@
 ## About
 **This plugin was made with the use of AI.**
 
-A repaired and rewritten version of the original [SCP181 plugin](https://github.com/YF-OFFICE/SCP181)by [YF-OFFICE](https://github.com/YF-OFFICE),updated for EXILED.
+A repaired and rewritten version of the original [SCP181 plugin](https://github.com/YF-OFFICE/SCP181) by [YF-OFFICE](https://github.com/YF-OFFICE),updated for EXILED.
 
 
 # SCP181
