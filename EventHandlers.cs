@@ -1,5 +1,8 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Exiled.API.Features;
+using Exiled.API.Features.Doors;
 using Exiled.Events.EventArgs.Player;
 using PlayerRoles;
 
@@ -9,6 +12,7 @@ public sealed class EventHandlers
 {
     private readonly Plugin plugin;
     private bool pendingAssignment;
+    private readonly Dictionary<Door, DateTime> doorCooldowns = new();
 
     public EventHandlers(Plugin plugin)
     {
@@ -17,6 +21,8 @@ public sealed class EventHandlers
 
     public void OnRoundStarted()
     {
+        doorCooldowns.Clear();
+
         if (Player.List.Count() < plugin.Config.MinimumPlayers)
             return;
 
@@ -43,8 +49,27 @@ public sealed class EventHandlers
         if (ev.IsAllowed)
             return;
 
+        if (IsDoorOnCooldown(ev.Door, out double remainingSeconds))
+        {
+            if (plugin.Config.Debug)
+                Log.Debug($"SCP-181 door luck blocked by per-door cooldown. Door={ev.Door.Type}, Remaining={remainingSeconds:F2}s");
+
+            return;
+        }
+
+        SetDoorCooldown(ev.Door);
+
         if (Roll(plugin.Config.DoorLuck))
+        {
             ev.IsAllowed = true;
+
+            if (plugin.Config.Debug)
+                Log.Debug($"SCP-181 lucky door success. Door={ev.Door.Type}");
+        }
+        else if (plugin.Config.Debug)
+        {
+            Log.Debug($"SCP-181 lucky door failed. Door={ev.Door.Type}");
+        }
     }
 
     public void OnHurting(HurtingEventArgs ev)
@@ -64,15 +89,16 @@ public sealed class EventHandlers
         if (ev.Player == null || ev.Player.Id != Plugin.SCP181Id)
             return;
 
-        ClearScp181Visuals(ev.Player);
         Plugin.SCP181Id = 0;
         pendingAssignment = false;
+        doorCooldowns.Clear();
     }
 
     public void OnRestartingRound()
     {
         Plugin.SCP181Id = 0;
         pendingAssignment = false;
+        doorCooldowns.Clear();
 
         if (plugin.Config.Debug)
             Log.Debug("SCP181 state has been reset.");
@@ -112,18 +138,32 @@ public sealed class EventHandlers
         player.MaxHealth = plugin.Config.MaxHealth;
         player.Health = player.MaxHealth;
         player.CustomName = null;
-        player.RankName = "SCP-181";
-        player.RankColor = "yellow";
         player.ClearInventory();
 
         foreach (var itemType in plugin.Config.StartingItems)
             player.AddItem(itemType);
     }
 
-    private static void ClearScp181Visuals(Player player)
+    private bool IsDoorOnCooldown(Door door, out double remainingSeconds)
     {
-        player.RankName = string.Empty;
-        player.RankColor = string.Empty;
+        remainingSeconds = 0;
+
+        if (!doorCooldowns.TryGetValue(door, out DateTime lastAttempt))
+            return false;
+
+        double elapsed = (DateTime.UtcNow - lastAttempt).TotalSeconds;
+        double cooldown = plugin.Config.DoorLuckPerDoorCooldown;
+
+        if (elapsed >= cooldown)
+            return false;
+
+        remainingSeconds = cooldown - elapsed;
+        return true;
+    }
+
+    private void SetDoorCooldown(Door door)
+    {
+        doorCooldowns[door] = DateTime.UtcNow;
     }
 
     private static bool Roll(int percent)
