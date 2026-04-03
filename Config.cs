@@ -7,7 +7,7 @@ namespace SCP181.Exiled;
 
 public sealed class Config : IConfig
 {
-    [Description("Master toggle. If false, the plugin does not load or run.")]
+    [Description("Master toggle.\nIf false, the plugin does not load or run.")]
     public bool IsEnabled { get; set; } = true;
 
     [Description("Enables additional debug logging in server logs.")]
@@ -15,9 +15,6 @@ public sealed class Config : IConfig
 
     [Description("Percent chance (0-100) for SCP-181 to open a denied but unlocked door.")]
     public int DoorLuck { get; set; } = 10;
-
-    [Description("Cooldown in seconds before SCP-181 can roll luck again on the same door.")]
-    public float DoorLuckPerDoorCooldown { get; set; } = 5f;
 
     [Description("Percent chance (0-100) for SCP-181 to negate an incoming damage event.")]
     public int DamageAvoidLuck { get; set; } = 10;
