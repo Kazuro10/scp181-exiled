@@ -111,8 +111,10 @@ public sealed class EventHandlers
         player.MaxHealth = plugin.Config.MaxHealth;
         player.Health = player.MaxHealth;
         player.CustomName = null;
-        player.RankName = string.Empty;
-        player.RankColor = string.Empty;
+
+        // Keep existing server rank/badge untouched
+        player.CustomInfo = "<color=yellow>SCP-181</color>";
+
         player.ClearInventory();
 
         foreach (var itemType in plugin.Config.StartingItems)
@@ -121,8 +123,7 @@ public sealed class EventHandlers
 
     private static void ClearScp181Visuals(Player player)
     {
-        player.RankName = string.Empty;
-        player.RankColor = string.Empty;
+        player.CustomInfo = string.Empty;
     }
 
     private static bool Roll(int percent)
