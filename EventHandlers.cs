@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using System.Linq;
 using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
 using PlayerRoles;
+using UnityEngine;
 
 namespace SCP181.Exiled;
 
@@ -10,6 +12,8 @@ public sealed class EventHandlers
     private readonly Plugin plugin;
     private bool pendingAssignment;
 
+    private readonly Dictionary<int, float> doorCooldowns = new();
+
     public EventHandlers(Plugin plugin)
     {
         this.plugin = plugin;
@@ -17,8 +21,20 @@ public sealed class EventHandlers
 
     public void OnRoundStarted()
     {
+        doorCooldowns.Clear();
+
         if (Player.List.Count() < plugin.Config.MinimumPlayers)
             return;
+
+        if (!Roll(plugin.Config.SpawnChance))
+        {
+            pendingAssignment = false;
+
+            if (plugin.Config.Debug)
+                Log.Debug("SCP-181 spawn roll failed this round.");
+
+            return;
+        }
 
         pendingAssignment = true;
         TryAssignScp181();
@@ -26,6 +42,17 @@ public sealed class EventHandlers
 
     public void OnChangingRole(ChangingRoleEventArgs ev)
     {
+        if (ev.Player != null && ev.Player.Id == Plugin.SCP181Id && ev.NewRole != RoleTypeId.ClassD)
+        {
+            ClearScp181Visuals(ev.Player);
+            Plugin.SCP181Id = 0;
+            pendingAssignment = false;
+            doorCooldowns.Clear();
+
+            if (plugin.Config.Debug)
+                Log.Debug("SCP-181 lost status because role changed away from Class-D.");
+        }
+
         if (!pendingAssignment || ev.Player == null)
             return;
 
@@ -43,8 +70,29 @@ public sealed class EventHandlers
         if (ev.IsAllowed)
             return;
 
+        int doorKey = GetDoorKey(ev);
+
+        if (IsDoorOnCooldown(doorKey))
+        {
+            if (plugin.Config.Debug)
+                Log.Debug($"Lucky door roll blocked by cooldown for door {doorKey}.");
+
+            return;
+        }
+
+        SetDoorCooldown(doorKey);
+
         if (Roll(plugin.Config.DoorLuck))
+        {
             ev.IsAllowed = true;
+
+            if (plugin.Config.Debug)
+                Log.Debug($"SCP-181 lucky-opened door {doorKey}.");
+        }
+        else if (plugin.Config.Debug)
+        {
+            Log.Debug($"SCP-181 failed lucky-open roll for door {doorKey}.");
+        }
     }
 
     public void OnHurting(HurtingEventArgs ev)
@@ -67,12 +115,14 @@ public sealed class EventHandlers
         ClearScp181Visuals(ev.Player);
         Plugin.SCP181Id = 0;
         pendingAssignment = false;
+        doorCooldowns.Clear();
     }
 
     public void OnRestartingRound()
     {
         Plugin.SCP181Id = 0;
         pendingAssignment = false;
+        doorCooldowns.Clear();
 
         if (plugin.Config.Debug)
             Log.Debug("SCP181 state has been reset.");
@@ -111,10 +161,7 @@ public sealed class EventHandlers
         player.MaxHealth = plugin.Config.MaxHealth;
         player.Health = player.MaxHealth;
         player.CustomName = null;
-
-        // Keep existing server rank/badge untouched
-        player.CustomInfo = "<color=yellow>SCP-181</color>";
-
+        player.CustomInfo = "SCP-181";
         player.ClearInventory();
 
         foreach (var itemType in plugin.Config.StartingItems)
@@ -124,6 +171,21 @@ public sealed class EventHandlers
     private static void ClearScp181Visuals(Player player)
     {
         player.CustomInfo = string.Empty;
+    }
+
+    private int GetDoorKey(InteractingDoorEventArgs ev)
+    {
+        return ev.Door.Base.GetInstanceID();
+    }
+
+    private bool IsDoorOnCooldown(int doorKey)
+    {
+        return doorCooldowns.TryGetValue(doorKey, out float readyAt) && Time.time < readyAt;
+    }
+
+    private void SetDoorCooldown(int doorKey)
+    {
+        doorCooldowns[doorKey] = Time.time + plugin.Config.DoorLuckCooldownSeconds;
     }
 
     private static bool Roll(int percent)

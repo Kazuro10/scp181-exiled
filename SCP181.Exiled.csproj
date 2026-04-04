@@ -10,6 +10,54 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ExMod.Exiled" Version="9.13.1" />
+    <Reference Include="0Harmony">
+      <HintPath>libs\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="Assembly-CSharp">
+      <HintPath>libs\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="Exiled.API">
+      <HintPath>libs\Exiled.API.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="Exiled.Events">
+      <HintPath>libs\Exiled.Events.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="Mirror">
+      <HintPath>libs\Mirror.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="UnityEngine">
+      <HintPath>libs\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>libs\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="netstandard">
+      <HintPath>libs\netstandard.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="System.Runtime">
+      <HintPath>libs\System.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="SCPSLAudioApi">
+      <HintPath>libs\SCPSLAudioApi.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 </Project>
