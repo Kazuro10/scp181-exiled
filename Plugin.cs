@@ -10,7 +10,7 @@ public sealed class Plugin : Plugin<Config>
     public override string Name => "SCP181";
     public override string Author => "YF-OFFICE / ported by ChatGPT for Kotek";
     public override string Prefix => "scp181";
-    public override Version Version { get; } = new(1, 0, 0);
+    public override Version Version { get; } = new(1, 1, 0);
     public override Version RequiredExiledVersion { get; } = new(9, 13, 1);
 
     public static Plugin Instance { get; private set; } = null!;
@@ -31,6 +31,10 @@ public sealed class Plugin : Plugin<Config>
         PlayerHandler.Hurting += Handlers.OnHurting;
         PlayerHandler.Died += Handlers.OnDied;
 
+        PlayerHandler.EnteringPocketDimension += Handlers.OnEnteringPocketDimension;
+        PlayerHandler.FailingEscapePocketDimension += Handlers.OnFailingEscapePocketDimension;
+        PlayerHandler.EscapingPocketDimension += Handlers.OnEscapingPocketDimension;
+
         Log.Info("SCP181 EXILED plugin enabled.");
         base.OnEnabled();
     }
@@ -43,6 +47,10 @@ public sealed class Plugin : Plugin<Config>
         PlayerHandler.InteractingDoor -= Handlers.OnInteractingDoor;
         PlayerHandler.Hurting -= Handlers.OnHurting;
         PlayerHandler.Died -= Handlers.OnDied;
+
+        PlayerHandler.EnteringPocketDimension -= Handlers.OnEnteringPocketDimension;
+        PlayerHandler.FailingEscapePocketDimension -= Handlers.OnFailingEscapePocketDimension;
+        PlayerHandler.EscapingPocketDimension -= Handlers.OnEscapingPocketDimension;
 
         Handlers = null!;
         SCP181Id = 0;

@@ -22,6 +22,12 @@ public sealed class Config : IConfig
     [Description("Percent chance (0-100) for SCP-181 to negate an incoming damage event.")]
     public int DamageAvoidLuck { get; set; } = 10;
 
+    [Description("Percent chance (0-100) for SCP-181 to turn a failed SCP-106 pocket dimension exit into a lucky escape.")]
+    public int PocketDimensionLuck { get; set; } = 25;
+
+    [Description("How many seconds of Disabled SCP-181 receives after a lucky pocket dimension escape.")]
+    public float PocketDimensionDisabledSeconds { get; set; } = 10f;
+
     [Description("Maximum health assigned to SCP-181 when the role is applied.")]
     public int MaxHealth { get; set; } = 150;
 

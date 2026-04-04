@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
 using PlayerRoles;
@@ -13,6 +14,7 @@ public sealed class EventHandlers
     private bool pendingAssignment;
 
     private readonly Dictionary<int, float> doorCooldowns = new();
+    private readonly Dictionary<int, Vector3> lastSafePositions = new();
 
     public EventHandlers(Plugin plugin)
     {
@@ -22,6 +24,7 @@ public sealed class EventHandlers
     public void OnRoundStarted()
     {
         doorCooldowns.Clear();
+        lastSafePositions.Clear();
 
         if (Player.List.Count() < plugin.Config.MinimumPlayers)
             return;
@@ -45,6 +48,7 @@ public sealed class EventHandlers
         if (ev.Player != null && ev.Player.Id == Plugin.SCP181Id && ev.NewRole != RoleTypeId.ClassD)
         {
             ClearScp181Visuals(ev.Player);
+            lastSafePositions.Remove(ev.Player.Id);
             Plugin.SCP181Id = 0;
             pendingAssignment = false;
             doorCooldowns.Clear();
@@ -107,12 +111,66 @@ public sealed class EventHandlers
             ev.IsAllowed = false;
     }
 
+    public void OnEnteringPocketDimension(EnteringPocketDimensionEventArgs ev)
+    {
+        if (ev.Player == null || ev.Player.Id != Plugin.SCP181Id)
+            return;
+
+        lastSafePositions[ev.Player.Id] = ev.Player.Position;
+
+        if (plugin.Config.Debug)
+            Log.Debug($"Stored SCP-181 pocket-dimension return position: {ev.Player.Position}");
+    }
+
+    public void OnEscapingPocketDimension(EscapingPocketDimensionEventArgs ev)
+    {
+        if (ev.Player == null || ev.Player.Id != Plugin.SCP181Id)
+            return;
+
+        lastSafePositions.Remove(ev.Player.Id);
+
+        if (plugin.Config.Debug)
+            Log.Debug("SCP-181 escaped pocket dimension normally.");
+    }
+
+    public void OnFailingEscapePocketDimension(FailingEscapePocketDimensionEventArgs ev)
+    {
+        if (ev.Player == null || ev.Player.Id != Plugin.SCP181Id)
+            return;
+
+        if (!Roll(plugin.Config.PocketDimensionLuck))
+        {
+            if (plugin.Config.Debug)
+                Log.Debug("SCP-181 failed pocket-dimension luck roll.");
+
+            return;
+        }
+
+        if (!lastSafePositions.TryGetValue(ev.Player.Id, out Vector3 returnPosition))
+        {
+            if (plugin.Config.Debug)
+                Log.Debug("SCP-181 pocket-dimension luck proc had no saved return position.");
+
+            return;
+        }
+
+        ev.IsAllowed = false;
+        ev.Player.Position = returnPosition;
+        ev.Player.EnableEffect(EffectType.Disabled, plugin.Config.PocketDimensionDisabledSeconds);
+
+        lastSafePositions.Remove(ev.Player.Id);
+
+        if (plugin.Config.Debug)
+            Log.Debug($"SCP-181 lucky-escaped pocket dimension to {returnPosition}.");
+    }
+
     public void OnDied(DiedEventArgs ev)
     {
         if (ev.Player == null || ev.Player.Id != Plugin.SCP181Id)
             return;
 
         ClearScp181Visuals(ev.Player);
+        lastSafePositions.Remove(ev.Player.Id);
         Plugin.SCP181Id = 0;
         pendingAssignment = false;
         doorCooldowns.Clear();
@@ -123,6 +181,7 @@ public sealed class EventHandlers
         Plugin.SCP181Id = 0;
         pendingAssignment = false;
         doorCooldowns.Clear();
+        lastSafePositions.Clear();
 
         if (plugin.Config.Debug)
             Log.Debug("SCP181 state has been reset.");
